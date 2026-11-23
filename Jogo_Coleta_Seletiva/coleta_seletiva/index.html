@@ -1,0 +1,2378 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>♻️ Coleta Seletiva</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700;800&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: none;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #0d1a10;
+      font-family: "Nunito", "Fredoka", "Segoe UI", Roboto, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    #game-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    canvas {
+      display: block;
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      outline: none;
+      cursor: pointer;
+      image-rendering: auto;
+    }
+
+    /* ── Barra de lixeiras (mobile) ── */
+    #lixeira-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      display: none;
+      /* mostrado só no mobile */
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 4px;
+      background: rgba(13, 26, 16, 0.92);
+      border-top: 2px solid #2e7d32;
+      z-index: 20;
+    }
+
+    .lixeira-btn {
+      flex: 1;
+      max-width: 80px;
+      aspect-ratio: 1;
+      border: 3px solid #3b5241;
+      border-radius: 12px;
+      background: rgba(35, 55, 38, 0.9);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #c8e6c9;
+      cursor: pointer;
+      transition: transform 0.1s, border-color 0.1s;
+      padding: 4px;
+    }
+
+    .lixeira-btn.ativa {
+      border-color: #69f0ae;
+      background: rgba(46, 125, 50, 0.6);
+      transform: scale(1.08);
+      box-shadow: 0 0 12px rgba(105, 240, 174, 0.4);
+    }
+
+    .lixeira-btn .emoji {
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    /* ── Botões de ação (mobile) ── */
+    #action-bar {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      display: none;
+      gap: 6px;
+      z-index: 20;
+    }
+
+    .action-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 2px solid #3b5241;
+      background: rgba(35, 55, 38, 0.85);
+      color: #e8f5e9;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .action-btn:active {
+      background: rgba(46, 125, 50, 0.7);
+    }
+
+    /* ── Botão jogar (tela de instruções, mobile) ── */
+    #btn-jogar-mobile {
+      position: absolute;
+      left: 50%;
+      bottom: 160px;
+      transform: translateX(-50%);
+      display: none;
+      padding: 16px 48px;
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+      background: linear-gradient(135deg, #2e7d32, #43a047);
+      border: 3px solid #69f0ae;
+      border-radius: 16px;
+      cursor: pointer;
+      z-index: 30;
+      animation: pulsar 1s infinite alternate;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      box-shadow: 0 4px 20px rgba(105, 240, 174, 0.3);
+    }
+
+    @keyframes pulsar {
+      from {
+        transform: translateX(-50%) scale(1);
+      }
+
+      to {
+        transform: translateX(-50%) scale(1.08);
+      }
+    }
+
+    /* ── Setas de movimento (mobile) ── */
+    #move-controls {
+      position: absolute;
+      bottom: 100px;
+      left: 0;
+      right: 0;
+      display: none;
+      justify-content: space-between;
+      padding: 0 12px;
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    .move-btn {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      border: 3px solid rgba(105, 240, 174, 0.5);
+      background: rgba(35, 55, 38, 0.75);
+      color: #e8f5e9;
+      font-size: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      pointer-events: auto;
+    }
+
+    .move-btn:active {
+      background: rgba(46, 125, 50, 0.8);
+      border-color: #69f0ae;
+    }
+
+    /* ── Modal de Conquistas ── */
+    #modal-conquistas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(8, 16, 10, 0.88);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      backdrop-filter: blur(4px);
+      padding: 16px;
+    }
+    .modal-box {
+      background: #142418;
+      border: 2px solid #2e7d32;
+      border-radius: 16px;
+      max-width: 480px;
+      width: 100%;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+      overflow: hidden;
+    }
+    .modal-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid #2e4d34;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(20, 36, 24, 0.95);
+    }
+    .modal-header h2 {
+      font-size: 17px;
+      color: #69f0ae;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-fechar {
+      background: none;
+      border: none;
+      color: #a5d6a7;
+      font-size: 20px;
+      cursor: pointer;
+      line-height: 1;
+      padding: 4px 8px;
+    }
+    .modal-body {
+      padding: 14px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .badge-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(25, 42, 29, 0.7);
+      border: 1px solid #2e4d34;
+      border-radius: 10px;
+      padding: 10px 14px;
+      transition: all 0.2s;
+    }
+    .badge-item.desbloqueado {
+      border-color: #ffd54f;
+      background: rgba(46, 68, 50, 0.85);
+      box-shadow: 0 0 10px rgba(255, 213, 79, 0.15);
+    }
+    .badge-item.bloqueado {
+      opacity: 0.55;
+      filter: grayscale(0.8);
+    }
+    .badge-icon {
+      font-size: 28px;
+      line-height: 1;
+    }
+    .badge-info {
+      flex: 1;
+    }
+    .badge-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .badge-item.desbloqueado .badge-title {
+      color: #ffd54f;
+    }
+    .badge-desc {
+      font-size: 11px;
+      color: #b0bec5;
+      margin-top: 2px;
+    }
+    .badge-status {
+      font-size: 18px;
+    }
+
+    /* ── Toast de Conquista ── */
+    #toast-conquista {
+      position: fixed;
+      top: -70px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #1b3820, #2e5c36);
+      border: 2px solid #ffd54f;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 25px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+      z-index: 120;
+      transition: top 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+      pointer-events: none;
+    }
+    #toast-conquista.ativo {
+      top: 16px;
+    }
+
+    /* Desktop: botões embaixo */
+    #desktop-bar {
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      z-index: 20;
+    }
+
+    .btn-desktop {
+      background: rgba(35, 55, 38, 0.86);
+      color: #e8f5e9;
+      border: 1px solid #3b5241;
+      border-radius: 8px;
+      padding: 6px 16px;
+      font-size: 13px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .btn-desktop:hover {
+      background: rgba(46, 60, 50, 0.9);
+    }
+
+    @media (pointer: coarse),
+    (max-width: 768px) {
+      #lixeira-bar {
+        display: flex;
+      }
+
+      #action-bar {
+        display: flex;
+      }
+
+      #move-controls {
+        display: flex;
+      }
+
+      #desktop-bar {
+        display: none;
+      }
+
+      .move-btn {
+        width: 60px;
+        height: 60px;
+        font-size: 28px;
+      }
+
+      #move-controls {
+        bottom: 95px;
+      }
+    }
+
+    @media (max-height: 500px) and (pointer: coarse) {
+      .lixeira-btn {
+        max-width: 56px;
+      }
+
+      .lixeira-btn .emoji {
+        font-size: 18px;
+      }
+
+      .lixeira-btn {
+        font-size: 9px;
+      }
+
+      #lixeira-bar {
+        padding: 4px 2px;
+        gap: 4px;
+      }
+
+      .move-btn {
+        width: 50px;
+        height: 50px;
+        font-size: 24px;
+      }
+
+      #move-controls {
+        bottom: 75px;
+      }
+    }
+
+    /* ── Menu Inicial Moderno (Overlay) ── */
+    
+
+    .menu-card {
+      background: rgba(20, 38, 25, 0.94);
+      border: 2px solid #2e7d32;
+      border-radius: 24px;
+      padding: 24px 28px;
+      max-width: 500px;
+      width: 100%;
+      max-height: 94vh;
+      overflow-y: auto;
+      text-align: center;
+      box-shadow: 0 16px 45px rgba(0, 0, 0, 0.7), 0 0 30px rgba(74, 222, 128, 0.12);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .menu-badge-eco {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(46, 125, 50, 0.35);
+      border: 1px solid #69f0ae;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 800;
+      color: #b9f6ca;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .menu-badge-eco .eco-icon {
+      font-size: 16px;
+      animation: girarEco 8s linear infinite;
+    }
+
+    @keyframes girarEco {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .menu-title {
+      font-family: 'Fredoka', 'Nunito', sans-serif;
+      font-weight: 800;
+      font-size: 32px;
+      line-height: 1.1;
+      letter-spacing: 1px;
+      background: linear-gradient(135deg, #a7f3d0 0%, #34d399 50%, #10b981 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 4px 12px rgba(16, 185, 129, 0.35));
+      margin-top: -2px;
+    }
+
+    .menu-subtitle {
+      font-size: 13px;
+      color: #c8e6c9;
+      font-weight: 600;
+      max-width: 380px;
+      line-height: 1.4;
+    }
+
+    .menu-stats-bar {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin: 2px 0;
+    }
+
+    .stat-pill {
+      background: rgba(13, 26, 16, 0.85);
+      border: 1px solid #2e7d32;
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      color: #c8e6c9;
+      font-weight: 600;
+    }
+
+    .stat-pill strong {
+      color: #ffd54f;
+    }
+
+    .menu-bins-preview {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 4px 0;
+    }
+
+    .bin-chip {
+      padding: 4px 10px;
+      border-radius: 16px;
+      font-size: 11px;
+      font-weight: 800;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      letter-spacing: 0.5px;
+    }
+
+    .bin-chip.bin-papel { border-color: #42a5f5; color: #90caf9; }
+    .bin-chip.bin-plastico { border-color: #ef5350; color: #ef9a9a; }
+    .bin-chip.bin-vidro { border-color: #66bb6a; color: #a5d6a7; }
+    .bin-chip.bin-metal { border-color: #ffee58; color: #fff59d; }
+    .bin-chip.bin-organico { border-color: #8d6e63; color: #bcaaa4; }
+
+    .menu-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      margin-top: 4px;
+    }
+
+    .btn-game-primary {
+      background: linear-gradient(180deg, #4ade80 0%, #16a34a 100%);
+      color: #052e16;
+      font-family: 'Fredoka', 'Nunito', sans-serif;
+      font-weight: 800;
+      font-size: 20px;
+      letter-spacing: 1px;
+      border: none;
+      border-radius: 16px;
+      padding: 13px 36px;
+      width: 100%;
+      max-width: 320px;
+      cursor: pointer;
+      box-shadow: 0 6px 0 #15803d, 0 10px 22px rgba(22, 163, 74, 0.45);
+      transition: transform 0.1s, box-shadow 0.1s, filter 0.15s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      animation: pulsarSuave 2s infinite ease-in-out;
+    }
+
+    @keyframes pulsarSuave {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+    }
+
+    .btn-game-primary:hover {
+      filter: brightness(1.1);
+    }
+
+    .btn-game-primary:active {
+      transform: translateY(4px) scale(0.98);
+      box-shadow: 0 2px 0 #15803d, 0 4px 10px rgba(0, 0, 0, 0.3);
+      animation: none;
+    }
+
+    .menu-btn-row {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+      max-width: 380px;
+    }
+
+    .btn-game-secondary {
+      background: rgba(35, 55, 38, 0.85);
+      color: #e8f5e9;
+      border: 1px solid #3b5241;
+      font-family: 'Fredoka', 'Nunito', sans-serif;
+      font-weight: 700;
+      font-size: 13px;
+      border-radius: 12px;
+      padding: 9px 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .btn-game-secondary:hover {
+      background: rgba(46, 75, 50, 0.95);
+      border-color: #69f0ae;
+      transform: translateY(-1px);
+    }
+
+    .btn-game-secondary:active {
+      transform: translateY(1px);
+    }
+
+    .menu-hint {
+      font-size: 11px;
+      color: #81c784;
+      font-weight: 600;
+      opacity: 0.9;
+      margin-top: 2px;
+      line-height: 1.3;
+    }
+
+    /* ── Modal Tutorial (Como Jogar) ── */
+    #modal-tutorial {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(8, 16, 10, 0.88);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      backdrop-filter: blur(5px);
+      padding: 16px;
+    }
+
+    .tutorial-box {
+      max-width: 520px;
+    }
+
+    .tutorial-body {
+      gap: 12px;
+      padding: 16px;
+    }
+
+    .tutorial-section {
+      background: rgba(25, 42, 29, 0.7);
+      border: 1px solid #2e4d34;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: #e8f5e9;
+      line-height: 1.45;
+    }
+
+    .tut-sec-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #69f0ae;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tut-bins-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .tut-bin-card {
+      background: rgba(15, 28, 18, 0.8);
+      border: 1px solid #2e4d34;
+      border-radius: 8px;
+      padding: 6px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .tut-bin-card strong {
+      font-size: 12px;
+      color: #fff;
+    }
+
+    .tut-bin-card small {
+      font-size: 10px;
+      color: #a5d6a7;
+    }
+
+    .tut-powerups-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .tut-power-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(15, 28, 18, 0.6);
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 11px;
+    }
+
+    .tut-power-item .tut-icon {
+      font-size: 18px;
+    }
+
+    .tut-warning-sec {
+      border-color: #ff5252;
+      background: rgba(45, 18, 18, 0.75);
+    }
+
+    .tut-warning-sec .tut-sec-title {
+      color: #ff5252;
+    }
+
+  </style>
+</head>
+
+<body>
+  <div id="game-container">
+    <canvas id="game" tabindex="0"></canvas>
+
+
+    <!-- Modal Tutorial (Como Jogar) -->
+    <div id="modal-tutorial">
+      <div class="modal-box tutorial-box">
+        <div class="modal-header">
+          <h2>📖 Guia de Como Jogar</h2>
+          <button class="btn-fechar" id="btn-fechar-tutorial">✕</button>
+        </div>
+        <div class="modal-body tutorial-body">
+          <div class="tutorial-section">
+            <div class="tut-sec-title">🎯 Objetivo da Missão</div>
+            <p>Recolha <strong>30 resíduos</strong> com sucesso na lixeira da cor certa antes que suas vidas acabem. Cada acerto deixa nosso planeta mais limpo!</p>
+          </div>
+
+          <div class="tutorial-section">
+            <div class="tut-sec-title">🗑️ As 5 Cores da Reciclagem</div>
+            <div class="tut-bins-grid">
+              <div class="tut-bin-card"><span class="emoji">🟦</span><strong>Papel</strong><small>Jornais, caixas, cadernos</small></div>
+              <div class="tut-bin-card"><span class="emoji">🟥</span><strong>Plástico</strong><small>Garrafas, sacolas, copos</small></div>
+              <div class="tut-bin-card"><span class="emoji">🟩</span><strong>Vidro</strong><small>Potes, garrafas, frascos</small></div>
+              <div class="tut-bin-card"><span class="emoji">🟨</span><strong>Metal</strong><small>Latinhas, tampas, arames</small></div>
+              <div class="tut-bin-card"><span class="emoji">🟫</span><strong>Orgânico</strong><small>Cascas, frutas, alimentos</small></div>
+            </div>
+          </div>
+
+          <div class="tutorial-section">
+            <div class="tut-sec-title">🔥 Combos & Multiplicadores</div>
+            <p>Acertar vários lixos em sequência sem errar ativa combos: <strong>x2, x3, x4</strong>! Quanto maior o combo, mais rápido você chega à vitória!</p>
+          </div>
+
+          <div class="tutorial-section">
+            <div class="tut-sec-title">⚡ Power-ups & Itens Especiais</div>
+            <div class="tut-powerups-list">
+              <div class="tut-power-item"><span class="tut-icon">🧲</span><div><strong>Ímã Ecológico:</strong> atrai lixos compatíveis automaticamente por 5s.</div></div>
+              <div class="tut-power-item"><span class="tut-icon">⏱️</span><div><strong>Câmera Lenta:</strong> desacelera a velocidade da queda temporariamente.</div></div>
+              <div class="tut-power-item"><span class="tut-icon">⭐</span><div><strong>Lixeira Coringa:</strong> qualquer lixo coletado é aceito gerando pontos!</div></div>
+              <div class="tut-power-item"><span class="tut-icon">🌱</span><div><strong>Muda de Árvore:</strong> restaura 1 vida perdida!</div></div>
+            </div>
+          </div>
+
+          <div class="tutorial-section tut-warning-sec">
+            <div class="tut-sec-title">☣️ Cuidado: Lixo Tóxico / Perigoso!</div>
+            <p>Pilhas, baterias e lâmpadas exigem descarte especial e <strong>NÃO</strong> podem ir nas 5 lixeiras comuns! Se encostar, sua lixeira é <strong>paralisada por 2 segundos</strong>. Desvie sempre!</p>
+          </div>
+
+          <button id="btn-fechar-tutorial-jogar" class="btn-game-primary" style="margin-top: 4px; width: 100%;">
+            ▶ ENTENDI, VAMOS JOGAR!
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Botão jogar no mobile -->
+    <button id="btn-jogar-mobile">▶ JOGAR</button>
+
+    <!-- Setas de movimento (mobile) -->
+    <div id="move-controls">
+      <button class="move-btn" id="btn-esquerda">◀</button>
+      <button class="move-btn" id="btn-direita">▶</button>
+    </div>
+
+    <!-- Barra de lixeiras (mobile) -->
+    <div id="lixeira-bar">
+      <button class="lixeira-btn ativa" data-tipo="1"><span class="emoji">🟦</span>Papel</button>
+      <button class="lixeira-btn" data-tipo="2"><span class="emoji">🟥</span>Plástico</button>
+      <button class="lixeira-btn" data-tipo="3"><span class="emoji">🟩</span>Vidro</button>
+      <button class="lixeira-btn" data-tipo="4"><span class="emoji">🟨</span>Metal</button>
+      <button class="lixeira-btn" data-tipo="5"><span class="emoji">🟫</span>Orgânico</button>
+    </div>
+
+    <!-- Ações mobile -->
+    <div id="action-bar">
+      <button class="action-btn" id="btn-inicio-m" title="Menu Início">🏠</button>
+      <button class="action-btn" id="btn-conquistas-m" title="Conquistas">🏆</button>
+      <button class="action-btn" id="btn-fullscreen-m" title="Tela Cheia">⛶</button>
+      <button class="action-btn" id="btn-mute-m" title="Som">🔊</button>
+      <button class="action-btn" id="btn-pause-m" title="Pausar">⏸</button>
+    </div>
+
+    <!-- Barra desktop -->
+    <div id="desktop-bar">
+      <button class="btn-desktop" id="btn-inicio-d">🏠 Início</button>
+      <button class="btn-desktop" id="btn-conquistas-d">🏆 Conquistas</button>
+      <button class="btn-desktop" id="btn-fullscreen-d">Tela Cheia (F)</button>
+      <button class="btn-desktop" id="btn-pausar-d">Pausar (P)</button>
+      <button class="btn-desktop" id="btn-reiniciar-d">Reiniciar</button>
+      <button class="btn-desktop" id="btn-mute-d">Som: Ligado (M)</button>
+    </div>
+
+    <!-- Toast de Notificação de Conquista -->
+    <div id="toast-conquista">
+      <span id="toast-icone">🏆</span>
+      <span id="toast-texto">Nova Conquista Desbloqueada!</span>
+    </div>
+
+    <!-- Modal de Álbum de Conquistas -->
+    <div id="modal-conquistas">
+      <div class="modal-box">
+        <div class="modal-header">
+          <h2>🏆 Álbum de Conquistas Ecológicas</h2>
+          <button class="btn-fechar" id="btn-fechar-modal">✕</button>
+        </div>
+        <div class="modal-body" id="lista-conquistas">
+          <!-- Renderizado via JavaScript -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    "use strict";
+
+    // ── Canvas & Contexto ──
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+
+    // ── Detectar mobile ──
+    const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.matchMedia("(pointer: coarse)").matches;
+
+    // ── Dimensões lógicas do jogo (Scratch original) ──
+    const GAME_W = 480, GAME_H = 360;
+
+    // ── Escala e offset para caber na tela ──
+    let scale = 1, offsetX = 0, offsetY = 0, drawW = GAME_W, drawH = GAME_H;
+
+    function recalcularTamanho() {
+      const cw = window.innerWidth;
+      let ch = window.innerHeight;
+
+      // No mobile, descontar altura da barra de lixeiras e controles
+      const lixeiraBar = document.getElementById("lixeira-bar");
+      const moveControls = document.getElementById("move-controls");
+      let barraAltura = 0;
+      if (isMobile) {
+        barraAltura = (lixeiraBar ? lixeiraBar.offsetHeight : 70) + 80; // barra + setas
+      }
+      const areaH = ch - barraAltura;
+
+      canvas.width = cw;
+      canvas.height = areaH > 100 ? areaH : ch;
+
+      const sx = canvas.width / GAME_W;
+      const sy = canvas.height / GAME_H;
+      scale = Math.min(sx, sy);
+      drawW = GAME_W * scale;
+      drawH = GAME_H * scale;
+      offsetX = (canvas.width - drawW) / 2;
+      offsetY = (canvas.height - drawH) / 2;
+    }
+
+    window.addEventListener("resize", recalcularTamanho);
+    recalcularTamanho();
+
+    // ── Carregar Assets ──
+    const ASSET_BASE = "dependencias/";
+    const STORAGE_KEY = "coleta_seletiva_recorde_v2";
+
+    function loadImg(nome) {
+      const img = new Image();
+      img.src = ASSET_BASE + nome;
+      return img;
+    }
+    function loadAudio(nome) {
+      try { return new Audio(ASSET_BASE + nome); }
+      catch (e) { return null; }
+    }
+
+    const imgs = {
+      bg: {
+        instrucoes: loadImg("49c8433626dd2759e7cea2697335b886.svg"),
+        jogo: loadImg("693507866d39d7257377845b34fa7426.png"),
+        fim: loadImg("1c3010490bfc4f7d96f7f1756c21f9de.svg"),
+        vitoria: loadImg("7e15832ed1b37bd73d3418030b27bc8e.svg"),
+      },
+      botao: loadImg("83289741ad14f2292187479156d68b15.svg"),
+      lixeira: [
+        loadImg("e0abe584a75ba6c8c5dbff995d9be90a.svg"),
+        loadImg("4bfcb0e25246a5ac747ae14778b9e751.svg"),
+        loadImg("d610b30c19b7e082ed98d0597592531b.svg"),
+        loadImg("d388958fbb03f3ac73d464126f2b11f8.svg"),
+        loadImg("506b5e3fb9f22601584dd04468c217c7.svg"),
+      ],
+      lixo: [
+        loadImg("750b6d248d55e43f035febc2ee61b693.svg"),
+        loadImg("b2946c689f98c56cc2ada16de60018b6.svg"),
+        loadImg("b5ac32ca01d749ce3b57e19b1ebcf8b0.svg"),
+        loadImg("9e6a1febff68f2f7427c406b27a378c8.svg"),
+        loadImg("d08c060f34f414e5d4274a1fe74c57c3.svg"),
+        loadImg("a380e70730f191243ddb989d1be972ea.svg"),
+        loadImg("c4f8588495bad0fb9cf808597db39fc3.svg"),
+        loadImg("e78af7aec183657375aff54ad57fefa9.svg"),
+        loadImg("80a6400b5fd9929c929a52b0aba67957.svg"),
+        loadImg("b8b976c0e35ef9fe7d816751c09aabc5.svg"),
+      ],
+      dica: [
+        loadImg("943525abb609ad165c88c55dd37bc555.svg"),
+        loadImg("561f2c58021e4ec10b58f009ef391431.svg"),
+        loadImg("77c71fc36e7f8d5e6f9b239f1aa6ef0a.svg"),
+        loadImg("7f683ab17ac6b7aac94b7af86074fbaa.svg"),
+        loadImg("a7b7b55ac7696e64f8dfcd5102922329.svg"),
+      ],
+    };
+
+    const sons = {
+      acerto: loadAudio("cfc50a412483f6aadb83adeff596052e.wav"),
+      erro: loadAudio("768bd6a764ab62a6a6764e4147c3e615.wav"),
+      fim: loadAudio("e3635ab50a93193e53cd16f047446add.wav"),
+      vitoria: loadAudio("b8251bb11c300af3582aba1239082d41.wav"),
+    };
+
+    // ── Recorde ──
+    function lerRecorde() {
+      try { const v = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10); return isNaN(v) ? 0 : Math.max(0, v); }
+      catch (e) { return 0; }
+    }
+    function salvarRecorde(r) {
+      try { localStorage.setItem(STORAGE_KEY, String(r)); } catch (e) { }
+    }
+
+    // ── Som ──
+    let mudo = false;
+    function playSound(aud) {
+      if (!aud || mudo) return;
+      try { aud.currentTime = 0; aud.play().catch(() => { }); } catch (e) { }
+    }
+
+    // ── Estado do jogo ──
+    let estado = "instrucoes";
+    let pausado = false, pausadoEm = 0;
+    let pontos = 0, recorde = lerRecorde(), vidas = 5;
+    let velocidade = 3.0, ultimoTipo = 1;
+    const META_VITORIA = 30;
+
+    // ── Curiosidades Ecológicas Rápidas (Trivia) ──
+    const CURIOSIDADES = [
+      "O vidro pode ser reciclado infinitas vezes sem perder a qualidade ou pureza!",
+      "Reciclar 1 tonelada de papel poupa cerca de 20 árvores e 10.000 litros de água.",
+      "Uma única latinha de alumínio reciclada economiza energia para ligar uma TV por 3 horas.",
+      "O plástico descartado no oceano pode levar até 450 anos para se decompor.",
+      "A compostagem de lixo orgânico gera adubo fértil e evita emissão de gás metano em aterros.",
+      "Pilhas e baterias jogadas no lixo comum contaminam o solo com metais pesados perigosos.",
+      "100 latinhas de metal recicladas poupam energia para iluminar uma casa por um dia inteiro."
+    ];
+    let curiosidadeAtual = CURIOSIDADES[0];
+
+    function sortearCuriosidade() {
+      curiosidadeAtual = CURIOSIDADES[Math.floor(Math.random() * CURIOSIDADES.length)];
+    }
+
+    // ── Estatísticas da Partida (Impacto Real) ──
+    let statsPartida = {
+      papel: 0,
+      plastico: 0,
+      vidro: 0,
+      metal: 0,
+      organico: 0,
+      toxicoDesviado: 0,
+      powerUpsColetados: 0,
+      vidasPerdidas: 0,
+      maxCombo: 0,
+    };
+
+    // ── Sistema de Conquistas (Badges) ──
+    const STORAGE_KEY_BADGES = "coleta_seletiva_badges_v1";
+    const CONQUISTAS_DEF = [
+      {
+        id: "mestre_vidro",
+        nome: "Mestre do Vidro",
+        desc: "Colete 5 vidros na mesma partida sem errar",
+        icone: "🟢"
+      },
+      {
+        id: "reflexo_ninja",
+        nome: "Reflexo Ninja",
+        desc: "Atinja um Combo de 10x ou mais",
+        icone: "⚡"
+      },
+      {
+        id: "amigo_floresta",
+        nome: "Amigo da Floresta",
+        desc: "Vença a partida sem perder nenhuma vida (5 vidas)",
+        icone: "🌳"
+      },
+      {
+        id: "magnetismo_verde",
+        nome: "Magnetismo Verde",
+        desc: "Colete e use o Ímã Ecológico",
+        icone: "🧲"
+      },
+      {
+        id: "guardiao_toxico",
+        nome: "Guardião Anti-Tóxico",
+        desc: "Desvie de 3 lixos tóxicos com sucesso na mesma partida",
+        icone: "🛡️"
+      },
+      {
+        id: "eco_campeao",
+        nome: "Campeão Ecológico",
+        desc: "Conclua uma partida completa atingindo 30 pontos",
+        icone: "🏆"
+      }
+    ];
+
+    function lerConquistas() {
+      try {
+        const dados = localStorage.getItem(STORAGE_KEY_BADGES);
+        return dados ? JSON.parse(dados) : {};
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function salvarConquistas(badges) {
+      try {
+        localStorage.setItem(STORAGE_KEY_BADGES, JSON.stringify(badges));
+      } catch (e) { }
+    }
+
+    let conquistasDesbloqueadas = lerConquistas();
+
+    const toastConquista = document.getElementById("toast-conquista");
+    const toastIcone = document.getElementById("toast-icone");
+    const toastTexto = document.getElementById("toast-texto");
+    let toastTimeout = null;
+
+    function exibirToastConquista(c) {
+      if (!toastConquista) return;
+      toastIcone.textContent = c.icone;
+      toastTexto.textContent = `Nova Conquista: ${c.nome}!`;
+      toastConquista.classList.add("ativo");
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toastConquista.classList.remove("ativo");
+      }, 3500);
+    }
+
+    function desbloquearConquista(id) {
+      if (conquistasDesbloqueadas[id]) return; // Já desbloqueada anteriormente
+      const def = CONQUISTAS_DEF.find(item => item.id === id);
+      if (!def) return;
+
+      conquistasDesbloqueadas[id] = {
+        data: new Date().toLocaleDateString("pt-BR")
+      };
+      salvarConquistas(conquistasDesbloqueadas);
+      exibirToastConquista(def);
+      playSound(sons.acerto);
+      if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
+    }
+
+    // Modal de Conquistas
+    const modalConquistas = document.getElementById("modal-conquistas");
+    const listaConquistas = document.getElementById("lista-conquistas");
+    const btnFecharModal = document.getElementById("btn-fechar-modal");
+    const btnConquistasD = document.getElementById("btn-conquistas-d");
+    const btnConquistasM = document.getElementById("btn-conquistas-m");
+
+    function renderizarModalConquistas() {
+      if (!listaConquistas) return;
+      listaConquistas.innerHTML = "";
+      CONQUISTAS_DEF.forEach(c => {
+        const desbloqueada = Boolean(conquistasDesbloqueadas[c.id]);
+        const item = document.createElement("div");
+        item.className = `badge-item ${desbloqueada ? "desbloqueado" : "bloqueado"}`;
+        item.innerHTML = `
+          <div class="badge-icon">${c.icone}</div>
+          <div class="badge-info">
+            <div class="badge-title">
+              ${c.nome}
+              ${desbloqueada ? "<span>✨ Desbloqueado!</span>" : ""}
+            </div>
+            <div class="badge-desc">${c.desc}</div>
+          </div>
+          <div class="badge-status">${desbloqueada ? "✅" : "🔒"}</div>
+        `;
+        listaConquistas.appendChild(item);
+      });
+    }
+
+    function abrirModalConquistas() {
+      renderizarModalConquistas();
+      if (modalConquistas) modalConquistas.style.display = "flex";
+    }
+
+    function fecharModalConquistas() {
+      if (modalConquistas) modalConquistas.style.display = "none";
+    }
+
+    if (btnFecharModal) btnFecharModal.addEventListener("click", fecharModalConquistas);
+    if (btnConquistasD) btnConquistasD.addEventListener("click", abrirModalConquistas);
+    if (btnConquistasM) btnConquistasM.addEventListener("click", abrirModalConquistas);
+
+    // ── Sistema de Combo & Multiplicador ──
+    let combo = 0;
+    let maxCombo = 0;
+    let multiplicador = 1;
+
+    // ── Efeitos Ativos (Power-ups e Penalidades) ──
+    let efeitos = {
+      imaAte: 0,        // 🧲 Atrai lixo correspondente
+      relogioAte: 0,    // ⏱️ Câmera lenta
+      coringaAte: 0,    // ⭐ Qualquer lixo é aceito
+      congeladoAte: 0,  // ⚡ Lixeira paralisada por lixo tóxico
+    };
+
+    let lixeiraX = 0, lixeiraY = -135;
+    let lixeiraFantasia = 1, lixeiraVisivel = false;
+
+    let dicaVisivel = false, dicaFantasia = 1, dicaAte = 0;
+
+    let clones = [], feedbacks = [];
+    let flashErroAte = 0, proximoSpawn = 0, ultimoAumentoVel = 0, encerrarEm = 0;
+
+    const teclas = {};
+
+    // ── Helpers de coordenadas (Scratch → Canvas lógico) ──
+    function scratchToCanvas(x, y, w, h, rotCenter) {
+      if (rotCenter) return [GAME_W / 2 + x - rotCenter[0], GAME_H / 2 - y - rotCenter[1]];
+      return [GAME_W / 2 + x - w / 2, GAME_H / 2 - y - h / 2];
+    }
+
+    function imagemPronta(img) {
+      return Boolean(img && img.complete && img.naturalWidth > 0 && img.naturalHeight > 0);
+    }
+
+    function roundRect(x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+
+    // ── Feedbacks visuais ──
+    function adicionarFeedback(x, y, texto, cor) {
+      feedbacks.push({ x, y, texto, cor, alpha: 1.0, criadoEm: performance.now() });
+    }
+
+    function dispararErro(tipoErrado, px, py) {
+      px = px || GAME_W / 2; py = py || GAME_H / 2;
+      const agora = performance.now();
+      if (vidas > 0) { vidas -= 1; ultimoTipo = tipoErrado; }
+      flashErroAte = agora + 240;
+      adicionarFeedback(px, py, "-1", "#ff5252");
+      playSound(sons.erro);
+      dicaFantasia = ultimoTipo;
+      dicaVisivel = true;
+      dicaAte = agora + 2600;
+    }
+
+    function registrarPonto() {
+      pontos += 1;
+      if (pontos > recorde) { recorde = pontos; salvarRecorde(recorde); }
+    }
+
+    function rectsColidem(a, b) {
+      return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+    }
+
+    
+    // ── Navegação: Ir para a tela inicial ──
+    function irParaInicio() {
+      estado = "instrucoes";
+      pausado = false;
+      lixeiraVisivel = false;
+      clones = [];
+      feedbacks = [];
+      efeitos = { imaAte: 0, relogioAte: 0, coringaAte: 0, congeladoAte: 0 };
+      atualizarUIInicio();
+    }
+
+    function atualizarUIInicio() {
+      
+      if (modalTutorial) modalTutorial.style.display = "none";
+      if (modalConquistas) modalConquistas.style.display = "none";
+      if (btnJogarMobile) btnJogarMobile.style.display = "none";
+
+      const moveControls = document.getElementById("move-controls");
+      const lixeiraBar = document.getElementById("lixeira-bar");
+      if (moveControls) moveControls.style.display = "none";
+      if (lixeiraBar) lixeiraBar.style.display = "none";
+
+      if (menuRecordeVal) menuRecordeVal.textContent = recorde + " / " + META_VITORIA;
+      if (menuConquistasVal) {
+        const totalBadges = (typeof CONQUISTAS_DEF !== "undefined") ? CONQUISTAS_DEF.length : 6;
+        const totalDesb = Object.keys(conquistasDesbloqueadas).length;
+        menuConquistasVal.textContent = totalDesb + " / " + totalBadges;
+      }
+      if (btnMenuSom) {
+        btnMenuSom.textContent = mudo ? "🔇 Som: Desligado" : "🔊 Som: Ligado";
+      }
+      if (menuHintText) {
+        menuHintText.textContent = isMobile
+          ? "📱 Arraste a lixeira e toque nas cores para jogar!"
+          : "⌨️ Setas ou A-D para mover • 1 a 5 para trocar lixeira • [Espaço] para jogar";
+      }
+    }
+
+    // ── Iniciar partida ──
+    function iniciarPartida() {
+      const agora = performance.now();
+      estado = "jogo";
+      pausado = false;
+      
+      if (modalTutorial) modalTutorial.style.display = "none";
+      if (modalConquistas) modalConquistas.style.display = "none";
+
+      const moveControls = document.getElementById("move-controls");
+      const lixeiraBar = document.getElementById("lixeira-bar");
+      if (isMobile) {
+        if (moveControls) moveControls.style.display = "flex";
+        if (lixeiraBar) lixeiraBar.style.display = "flex";
+      }
+      pontos = 0; vidas = 5; velocidade = 3.0; ultimoTipo = 1;
+      combo = 0; maxCombo = 0; multiplicador = 1;
+      efeitos = { imaAte: 0, relogioAte: 0, coringaAte: 0, congeladoAte: 0 };
+      sortearCuriosidade();
+      statsPartida = {
+        papel: 0,
+        plastico: 0,
+        vidro: 0,
+        metal: 0,
+        organico: 0,
+        toxicoDesviado: 0,
+        powerUpsColetados: 0,
+        vidasPerdidas: 0,
+        maxCombo: 0,
+      };
+      lixeiraX = 0; lixeiraY = -135; lixeiraFantasia = 1; lixeiraVisivel = true;
+      dicaVisivel = false;
+      clones = []; feedbacks = [];
+      flashErroAte = 0;
+      ultimoAumentoVel = agora;
+      proximoSpawn = agora + 1000 + (1100 + Math.random() * 900);
+
+      // Atualizar UI mobile
+      atualizarLixeiraUI();
+      atualizarBotaoPausar();
+      btnJogarMobile.style.display = "none";
+    }
+
+    // ── Pausa ──
+    function alternarPausa() {
+      if (estado !== "jogo") return;
+      const agora = performance.now();
+      if (!pausado) {
+        pausado = true;
+        pausadoEm = agora;
+      } else {
+        const delta = agora - pausadoEm;
+        ultimoAumentoVel += delta;
+        proximoSpawn += delta;
+        if (dicaVisivel) dicaAte += delta;
+        if (flashErroAte > 0) flashErroAte += delta;
+        if (efeitos.imaAte > 0) efeitos.imaAte += delta;
+        if (efeitos.relogioAte > 0) efeitos.relogioAte += delta;
+        if (efeitos.coringaAte > 0) efeitos.coringaAte += delta;
+        if (efeitos.congeladoAte > 0) efeitos.congeladoAte += delta;
+        for (const fb of feedbacks) fb.criadoEm += delta;
+        pausado = false;
+      }
+      atualizarBotaoPausar();
+    }
+
+    // ── UI ──
+    const btnFullscreenD = document.getElementById("btn-fullscreen-d");
+    const btnFullscreenM = document.getElementById("btn-fullscreen-m");
+    const btnPausarD = document.getElementById("btn-pausar-d");
+    const btnReiniciarD = document.getElementById("btn-reiniciar-d");
+    const btnMuteD = document.getElementById("btn-mute-d");
+    const btnPauseM = document.getElementById("btn-pause-m");
+    const btnMuteM = document.getElementById("btn-mute-m");
+    const btnJogarMobile = document.getElementById("btn-jogar-mobile");
+
+    const menuScreen = document.getElementById("menu-screen");
+    const btnMenuJogar = document.getElementById("btn-menu-jogar");
+    const btnMenuTutorial = document.getElementById("btn-menu-tutorial");
+    const btnMenuConquistas = document.getElementById("btn-menu-conquistas");
+    const btnMenuSom = document.getElementById("btn-menu-som");
+    const menuRecordeVal = document.getElementById("menu-recorde-val");
+    const menuConquistasVal = document.getElementById("menu-conquistas-val");
+    const menuHintText = document.getElementById("menu-hint-text");
+
+    const modalTutorial = document.getElementById("modal-tutorial");
+    const btnFecharTutorial = document.getElementById("btn-fechar-tutorial");
+    const btnFecharTutorialJogar = document.getElementById("btn-fechar-tutorial-jogar");
+
+    const btnInicioD = document.getElementById("btn-inicio-d");
+    const btnInicioM = document.getElementById("btn-inicio-m");
+
+    const lixeiraBtns = document.querySelectorAll(".lixeira-btn");
+    const btnEsquerda = document.getElementById("btn-esquerda");
+    const btnDireita = document.getElementById("btn-direita");
+
+    // Desbloqueio de áudio em navegadores mobile
+    let audioUnlocked = false;
+    function unlockAudio() {
+      if (audioUnlocked) return;
+      Object.values(sons).forEach(snd => {
+        if (snd) {
+          snd.play().then(() => { snd.pause(); snd.currentTime = 0; }).catch(() => { });
+        }
+      });
+      audioUnlocked = true;
+    }
+    window.addEventListener("touchstart", unlockAudio, { once: true, passive: true });
+    window.addEventListener("click", unlockAudio, { once: true });
+
+    function atualizarBotaoPausar() {
+      const txt = pausado ? "Continuar" : "Pausar";
+      btnPausarD.textContent = txt + " (P)";
+      btnPauseM.textContent = pausado ? "▶" : "⏸";
+    }
+
+    function atualizarBotaoMute() {
+      btnMuteD.textContent = mudo ? "Som: Mudo (M)" : "Som: Ligado (M)";
+      btnMuteM.textContent = mudo ? "🔇" : "🔊";
+      if (btnMenuSom) btnMenuSom.textContent = mudo ? "🔇 Som: Desligado" : "🔊 Som: Ligado";
+    }
+
+    function alternarMute() {
+      mudo = !mudo;
+      atualizarBotaoMute();
+    }
+
+    function atualizarLixeiraUI() {
+      lixeiraBtns.forEach(btn => {
+        btn.classList.toggle("ativa", parseInt(btn.dataset.tipo) === lixeiraFantasia);
+      });
+    }
+
+    // Fullscreen
+    function toggleFullscreen() {
+      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        const el = document.documentElement;
+        if (el.requestFullscreen) el.requestFullscreen();
+        else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+      }
+    }
+    document.addEventListener("fullscreenchange", () => setTimeout(recalcularTamanho, 100));
+    document.addEventListener("webkitfullscreenchange", () => setTimeout(recalcularTamanho, 100));
+
+    if (btnFullscreenD) btnFullscreenD.addEventListener("click", toggleFullscreen);
+    if (btnFullscreenM) btnFullscreenM.addEventListener("click", toggleFullscreen);
+
+    
+    // Botões de início
+    if (btnInicioD) btnInicioD.addEventListener("click", () => { irParaInicio(); canvas.focus(); });
+    if (btnInicioM) btnInicioM.addEventListener("click", irParaInicio);
+
+    // Botões do Menu Inicial
+    if (btnMenuJogar) {
+      btnMenuJogar.addEventListener("click", () => {
+        unlockAudio();
+        iniciarPartida();
+      });
+    }
+    if (btnMenuTutorial) {
+      btnMenuTutorial.addEventListener("click", () => {
+        unlockAudio();
+        if (modalTutorial) modalTutorial.style.display = "flex";
+      });
+    }
+    if (btnFecharTutorial) {
+      btnFecharTutorial.addEventListener("click", () => {
+        if (modalTutorial) modalTutorial.style.display = "none";
+      });
+    }
+    if (btnFecharTutorialJogar) {
+      btnFecharTutorialJogar.addEventListener("click", () => {
+        unlockAudio();
+        if (modalTutorial) modalTutorial.style.display = "none";
+        iniciarPartida();
+      });
+    }
+    if (btnMenuConquistas) {
+      btnMenuConquistas.addEventListener("click", () => {
+        unlockAudio();
+        renderizarModalConquistas();
+        if (modalConquistas) modalConquistas.style.display = "flex";
+      });
+    }
+    if (btnMenuSom) {
+      btnMenuSom.addEventListener("click", () => {
+        alternarMute();
+      });
+    }
+
+    // Desktop buttons
+    btnPausarD.addEventListener("click", () => { alternarPausa(); canvas.focus(); });
+    btnReiniciarD.addEventListener("click", () => { iniciarPartida(); canvas.focus(); });
+    btnMuteD.addEventListener("click", () => { alternarMute(); canvas.focus(); });
+
+    // Mobile buttons
+    btnPauseM.addEventListener("click", alternarPausa);
+    btnMuteM.addEventListener("click", alternarMute);
+    btnJogarMobile.addEventListener("click", () => {
+      unlockAudio();
+      iniciarPartida();
+    });
+
+    // Lixeira buttons (mobile)
+    lixeiraBtns.forEach(btn => {
+      const trocarLixeira = (e) => {
+        if (e && e.cancelable) e.preventDefault();
+        if (estado !== "jogo" || pausado) return;
+        lixeiraFantasia = parseInt(btn.dataset.tipo);
+        atualizarLixeiraUI();
+      };
+      btn.addEventListener("touchstart", trocarLixeira, { passive: false });
+      btn.addEventListener("click", trocarLixeira);
+    });
+
+    // Setas de movimento (mobile) — contínuo enquanto segura
+    let moveEsquerda = false, moveDireita = false;
+
+    function iniciarMovimento(dir) {
+      if (dir === "esquerda") moveEsquerda = true;
+      else moveDireita = true;
+    }
+    function pararMovimento(dir) {
+      if (dir === "esquerda") moveEsquerda = false;
+      else moveDireita = false;
+    }
+
+    btnEsquerda.addEventListener("touchstart", (e) => { if (e.cancelable) e.preventDefault(); iniciarMovimento("esquerda"); }, { passive: false });
+    btnEsquerda.addEventListener("touchend", (e) => { if (e.cancelable) e.preventDefault(); pararMovimento("esquerda"); });
+    btnEsquerda.addEventListener("touchcancel", (e) => { if (e.cancelable) e.preventDefault(); pararMovimento("esquerda"); });
+    btnEsquerda.addEventListener("mousedown", () => iniciarMovimento("esquerda"));
+    btnEsquerda.addEventListener("mouseup", () => pararMovimento("esquerda"));
+    btnEsquerda.addEventListener("mouseleave", () => pararMovimento("esquerda"));
+
+    btnDireita.addEventListener("touchstart", (e) => { if (e.cancelable) e.preventDefault(); iniciarMovimento("direita"); }, { passive: false });
+    btnDireita.addEventListener("touchend", (e) => { if (e.cancelable) e.preventDefault(); pararMovimento("direita"); });
+    btnDireita.addEventListener("touchcancel", (e) => { if (e.cancelable) e.preventDefault(); pararMovimento("direita"); });
+    btnDireita.addEventListener("mousedown", () => iniciarMovimento("direita"));
+    btnDireita.addEventListener("mouseup", () => pararMovimento("direita"));
+    btnDireita.addEventListener("mouseleave", () => pararMovimento("direita"));
+
+    
+    function getCanvasLogicalCoords(evt) {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = (evt.touches && evt.touches[0]) ? evt.touches[0].clientX : evt.clientX;
+      const clientY = (evt.touches && evt.touches[0]) ? evt.touches[0].clientY : evt.clientY;
+      const cx = clientX - rect.left;
+      const cy = clientY - rect.top;
+      const lx = (cx - offsetX) / scale;
+      const ly = (cy - offsetY) / scale;
+      return { x: lx, y: ly };
+    }
+
+    // ── Touch: arrastar a lixeira ──
+    let touchDragging = false;
+    let lastTouchX = 0;
+
+    canvas.addEventListener("touchstart", (e) => {
+      unlockAudio();
+      if (estado === "instrucoes") {
+        iniciarPartida();
+        return;
+      }
+      if ((estado === "fim" || estado === "vitoria") && performance.now() >= encerrarEm) {
+        const coords = getCanvasLogicalCoords(e);
+        const btnY = (estado === "vitoria") ? 280 : 255;
+        // Se tocou no botão Menu Início (lado direito)
+        if (coords.x >= 250 && coords.x <= 430 && coords.y >= btnY - 22 && coords.y <= btnY + 22) {
+          irParaInicio();
+          return;
+        }
+        // Se tocou em Jogar Novamente ou em qualquer outro ponto
+        iniciarPartida();
+        return;
+      }
+      if (estado !== "jogo" || pausado) return;
+      if (e.cancelable) e.preventDefault();
+      touchDragging = true;
+      lastTouchX = e.touches[0].clientX;
+    }, { passive: false });
+
+    canvas.addEventListener("touchmove", (e) => {
+      if (!touchDragging || estado !== "jogo" || pausado) return;
+      if (e.cancelable) e.preventDefault();
+      const dx = e.touches[0].clientX - lastTouchX;
+      lixeiraX += (dx / scale) * 1.3;
+      if (lixeiraX > 205) lixeiraX = 205;
+      if (lixeiraX < -205) lixeiraX = -205;
+      lastTouchX = e.touches[0].clientX;
+    }, { passive: false });
+
+    canvas.addEventListener("touchend", () => { touchDragging = false; });
+    canvas.addEventListener("touchcancel", () => { touchDragging = false; });
+
+    // Canvas click para iniciar no desktop
+    canvas.addEventListener("click", (e) => {
+      unlockAudio();
+      if (estado === "instrucoes") {
+        iniciarPartida();
+      } else if ((estado === "fim" || estado === "vitoria") && performance.now() >= encerrarEm) {
+        const coords = getCanvasLogicalCoords(e);
+        const btnY = (estado === "vitoria") ? 280 : 255;
+        // Se clicou no botão Menu Início (lado direito)
+        if (coords.x >= 250 && coords.x <= 430 && coords.y >= btnY - 22 && coords.y <= btnY + 22) {
+          irParaInicio();
+          return;
+        }
+        iniciarPartida();
+      }
+      canvas.focus();
+    });
+
+    // Mostrar botão jogar no mobile
+    function atualizarBotaoJogar() {
+      if (isMobile && (estado === "instrucoes" || estado === "fim" || estado === "vitoria")) {
+        btnJogarMobile.style.display = "block";
+        btnJogarMobile.textContent = (estado === "instrucoes") ? "▶ JOGAR" : "🔄 JOGAR NOVAMENTE";
+      } else {
+        btnJogarMobile.style.display = "none";
+      }
+    }
+
+    // ── Teclado ──
+    window.addEventListener("keydown", (e) => {
+      teclas[e.code] = true;
+      if (["Space", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.code)) e.preventDefault();
+
+      if (e.key && (e.key.toLowerCase() === "f")) { toggleFullscreen(); return; }
+      if (e.key && e.key.toLowerCase() === "m") { alternarMute(); return; }
+      if (e.key && e.key.toLowerCase() === "p") { alternarPausa(); return; }
+
+      if ((estado === "instrucoes" || estado === "fim" || estado === "vitoria") && e.code === "Space") {
+        if (estado === "instrucoes" || performance.now() >= encerrarEm) {
+          iniciarPartida();
+        }
+      } else if (estado === "jogo" && !pausado) {
+        if (e.key === "1") lixeiraFantasia = 1;
+        if (e.key === "2") lixeiraFantasia = 2;
+        if (e.key === "3") lixeiraFantasia = 3;
+        if (e.key === "4") lixeiraFantasia = 4;
+        if (e.key === "5") lixeiraFantasia = 5;
+        atualizarLixeiraUI();
+      }
+    });
+    window.addEventListener("keyup", (e) => { teclas[e.code] = false; });
+
+    // ── Fullscreen ──
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => { });
+      } else {
+        document.exitFullscreen().catch(() => { });
+      }
+    }
+
+    // ── Game Loop ──
+    function loop(agora) {
+      const tempoRef = pausado ? pausadoEm : agora;
+
+      // ── Lógica ──
+      if (estado === "jogo" && !pausado) {
+        if (agora - ultimoAumentoVel >= 6000) {
+          velocidade += 0.4;
+          ultimoAumentoVel = agora;
+        }
+
+        const velEfetiva = (efeitos.relogioAte > agora) ? velocidade * 0.45 : velocidade;
+
+        // Movimento via teclado ou botões touch (bloqueado se paralisado por lixo tóxico)
+        const estaCongelado = efeitos.congeladoAte > agora;
+        if (!estaCongelado) {
+          if (teclas["ArrowLeft"] || teclas["KeyA"] || moveEsquerda) lixeiraX -= 14;
+          if (teclas["ArrowRight"] || teclas["KeyD"] || moveDireita) lixeiraX += 14;
+          if (lixeiraX > 205) lixeiraX = 205;
+          if (lixeiraX < -205) lixeiraX = -205;
+        }
+
+        // Efeito do Ímã: atrai o lixo da cor certa
+        if (efeitos.imaAte > agora) {
+          for (const c of clones) {
+            if (!c.isSpecial && c.tipo === lixeiraFantasia) {
+              const dx = lixeiraX - c.x;
+              c.x += Math.sign(dx) * Math.min(Math.abs(dx), 5.5);
+            }
+          }
+        }
+
+        // Spawn de lixo, power-ups e obstáculos
+        if (agora >= proximoSpawn) {
+          const sorteio = Math.random();
+          // 12% lixo tóxico (obstáculo que deve ser evitado)
+          if (sorteio < 0.12) {
+            clones.push({
+              x: Math.floor(Math.random() * 401) - 200,
+              y: 175,
+              isSpecial: true,
+              tipoEspecial: "toxico",
+              emoji: "☣️",
+              cor: "#ff1744",
+              nome: "Lixo Tóxico",
+              w: 42,
+              h: 42
+            });
+          // 13% power-ups benéficos
+          } else if (sorteio < 0.25) {
+            const pus = [
+              { id: "ima", emoji: "🧲", cor: "#ff4081", nome: "Ímã" },
+              { id: "relogio", emoji: "⏱️", cor: "#00e5ff", nome: "Câmera Lenta" },
+              { id: "coringa", emoji: "⭐", cor: "#e040fb", nome: "Coringa" },
+              { id: "vida", emoji: "🌱", cor: "#69f0ae", nome: "Vida Extra" },
+            ];
+            const sel = pus[Math.floor(Math.random() * pus.length)];
+            clones.push({
+              x: Math.floor(Math.random() * 401) - 200,
+              y: 175,
+              isSpecial: true,
+              tipoEspecial: sel.id,
+              emoji: sel.emoji,
+              cor: sel.cor,
+              nome: sel.nome,
+              w: 42,
+              h: 42
+            });
+          // 75% lixo comum
+          } else {
+            const item = Math.floor(Math.random() * 10) + 1;
+            const tipo = ((item - 1) % 5) + 1;
+            clones.push({
+              x: Math.floor(Math.random() * 401) - 200,
+              y: 175,
+              isSpecial: false,
+              item,
+              tipo,
+              w: 50,
+              h: 50
+            });
+          }
+          proximoSpawn = agora + (1100 + Math.random() * 900);
+        }
+
+        // Colisão
+        const imgL = imgs.lixeira[lixeiraFantasia - 1];
+        const lw = (imgL && imgL.naturalWidth) || 80;
+        const lh = (imgL && imgL.naturalHeight) || 84;
+        const [lx, ly] = scratchToCanvas(lixeiraX, lixeiraY, lw, lh, [40, 42]);
+        const rectLixeira = { x: lx, y: ly, w: lw, h: lh };
+
+        const restantes = [];
+        for (const c of clones) {
+          c.y -= velEfetiva;
+          const cw = c.w || 50;
+          const ch = c.h || 50;
+          const [cx, cy] = scratchToCanvas(c.x, c.y, cw, ch);
+          const rectItem = { x: cx, y: cy, w: cw, h: ch };
+
+          if (rectsColidem(rectItem, rectLixeira)) {
+            if (c.isSpecial) {
+              if (c.tipoEspecial === "toxico") {
+                // Obstáculo atingido!
+                if (vidas > 0) vidas--;
+                statsPartida.vidasPerdidas++;
+                combo = 0; multiplicador = 1;
+                flashErroAte = agora + 350;
+                efeitos.congeladoAte = agora + 2000;
+                playSound(sons.erro);
+                adicionarFeedback(lx + lw / 2, ly - 8, "-1 ⚡ PARALISADO!", "#ff1744");
+                if (navigator.vibrate) navigator.vibrate([120, 60, 120]);
+              } else if (c.tipoEspecial === "ima") {
+                statsPartida.powerUpsColetados++;
+                efeitos.imaAte = agora + 5000;
+                desbloquearConquista("magnetismo_verde");
+                playSound(sons.acerto);
+                adicionarFeedback(lx + lw / 2, ly - 8, "🧲 ÍMÃ (5s)!", "#ff4081");
+                if (navigator.vibrate) navigator.vibrate(50);
+              } else if (c.tipoEspecial === "relogio") {
+                statsPartida.powerUpsColetados++;
+                efeitos.relogioAte = agora + 5000;
+                playSound(sons.acerto);
+                adicionarFeedback(lx + lw / 2, ly - 8, "⏱️ CÂMERA LENTA (5s)!", "#00e5ff");
+                if (navigator.vibrate) navigator.vibrate(50);
+              } else if (c.tipoEspecial === "coringa") {
+                statsPartida.powerUpsColetados++;
+                efeitos.coringaAte = agora + 5000;
+                playSound(sons.acerto);
+                adicionarFeedback(lx + lw / 2, ly - 8, "⭐ CORINGA (5s)!", "#e040fb");
+                if (navigator.vibrate) navigator.vibrate(50);
+              } else if (c.tipoEspecial === "vida") {
+                statsPartida.powerUpsColetados++;
+                playSound(sons.acerto);
+                if (vidas < 5) {
+                  vidas++;
+                  adicionarFeedback(lx + lw / 2, ly - 8, "+1 VIDA! 🌱", "#69f0ae");
+                } else {
+                  pontos += 3;
+                  adicionarFeedback(lx + lw / 2, ly - 8, "+3 BÔNUS! 🌱", "#69f0ae");
+                }
+                if (navigator.vibrate) navigator.vibrate([30, 20, 30]);
+              }
+              continue;
+            }
+
+            // Lixo comum
+            const acertou = (lixeiraFantasia === c.tipo) || (efeitos.coringaAte > agora);
+            if (acertou) {
+              combo++;
+              if (combo > maxCombo) maxCombo = combo;
+              statsPartida.maxCombo = maxCombo;
+
+              const categorias = ["papel", "plastico", "vidro", "metal", "organico"];
+              const catNome = categorias[c.tipo - 1] || "papel";
+              statsPartida[catNome]++;
+
+              if (statsPartida.vidro >= 5) {
+                desbloquearConquista("mestre_vidro");
+              }
+              if (combo >= 10) {
+                desbloquearConquista("reflexo_ninja");
+              }
+
+              if (combo >= 10) multiplicador = 4;
+              else if (combo >= 6) multiplicador = 3;
+              else if (combo >= 3) multiplicador = 2;
+              else multiplicador = 1;
+
+              const pts = 1 * multiplicador;
+              pontos += pts;
+              if (pontos > recorde) { recorde = pontos; salvarRecorde(recorde); }
+
+              let msg = "+1";
+              let cor = "#69f0ae";
+              if (combo >= 10) { msg = `+${pts} 🔥 LENDÁRIO x4!`; cor = "#ffea00"; }
+              else if (combo >= 6) { msg = `+${pts} ⚡ SUPER x3!`; cor = "#ff9100"; }
+              else if (combo >= 3) { msg = `+${pts} 💥 COMBO x2!`; cor = "#00e5ff"; }
+
+              adicionarFeedback(lx + lw / 2, ly - 8, msg, cor);
+              playSound(sons.acerto);
+              if (navigator.vibrate) navigator.vibrate(combo >= 4 ? [30, 20, 30] : 30);
+            } else {
+              statsPartida.vidasPerdidas++;
+              combo = 0; multiplicador = 1;
+              dispararErro(c.tipo, lx + lw / 2, ly - 6);
+              if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
+            }
+            continue;
+          }
+
+          // Queda no chão
+          if (c.y < -170) {
+            if (c.isSpecial) {
+              if (c.tipoEspecial === "toxico") {
+                // Desviou do lixo tóxico com sucesso!
+                statsPartida.toxicoDesviado++;
+                if (statsPartida.toxicoDesviado >= 3) {
+                  desbloquearConquista("guardiao_toxico");
+                }
+                adicionarFeedback(cx + cw / 2, GAME_H - 30, "DESVIOU! 🛡️", "#90a4ae");
+              }
+            } else {
+              statsPartida.vidasPerdidas++;
+              combo = 0; multiplicador = 1;
+              dispararErro(c.tipo, cx + cw / 2, GAME_H - 30);
+              if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
+            }
+            continue;
+          }
+
+          restantes.push(c);
+        }
+        clones = restantes;
+
+        if (dicaVisivel && agora >= dicaAte) dicaVisivel = false;
+
+        if (vidas < 1) {
+          estado = "fim";
+          pausado = false; atualizarBotaoPausar();
+          lixeiraVisivel = false; dicaVisivel = false;
+          clones = [];
+          playSound(sons.fim);
+          sortearCuriosidade();
+          encerrarEm = agora + 800;
+          atualizarBotaoJogar();
+        } else if (pontos >= META_VITORIA) {
+          estado = "vitoria";
+          pausado = false; atualizarBotaoPausar();
+          lixeiraVisivel = false; dicaVisivel = false;
+          clones = [];
+          desbloquearConquista("eco_campeao");
+          if (vidas === 5) {
+            desbloquearConquista("amigo_floresta");
+          }
+          playSound(sons.vitoria);
+          sortearCuriosidade();
+          encerrarEm = agora + 800;
+          atualizarBotaoJogar();
+        }
+      } else if (estado === "fim" || estado === "vitoria") {
+        // Aguarda toque do jogador para reiniciar
+      }
+
+      // ── Renderização ──
+      ctx.save();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Fundo escuro preenchendo tudo
+      ctx.fillStyle = "#0d1a10";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Transformar para área de jogo escalada
+      ctx.translate(offsetX, offsetY);
+      ctx.scale(scale, scale);
+
+      // Tremor de erro
+      if (!pausado && tempoRef < flashErroAte) {
+        const tremor = Math.sin(tempoRef * 0.08) * 3;
+        ctx.translate(tremor, 0);
+      }
+
+      // Background
+      ctx.fillStyle = "#1b2a1e";
+      ctx.fillRect(0, 0, GAME_W, GAME_H);
+
+      // Desenhar Fundo de acordo com o estado
+      if (imagemPronta(imgs.bg.jogo)) {
+        ctx.drawImage(imgs.bg.jogo, 0, 0, GAME_W, GAME_H);
+      } else if (imagemPronta(imgs.bg[estado])) {
+        ctx.drawImage(imgs.bg[estado], 0, 0, GAME_W, GAME_H);
+      } else {
+        ctx.fillStyle = "#1b2a1e";
+        ctx.fillRect(0, 0, GAME_W, GAME_H);
+      }
+
+      // ── Renderização específica por estado ──
+      if (estado === "instrucoes") {
+        // Escurecer suavemente o fundo para destacar o menu
+        ctx.fillStyle = "rgba(8, 20, 12, 0.72)";
+        ctx.fillRect(0, 0, GAME_W, GAME_H);
+
+        // Card central moderno
+        ctx.save();
+        ctx.fillStyle = "rgba(18, 36, 23, 0.94)";
+        roundRect(28, 18, GAME_W - 56, GAME_H - 36, 16);
+        ctx.fill();
+        ctx.strokeStyle = "#2e7d32";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Badge: Missão Ecológica
+        ctx.fillStyle = "rgba(46, 125, 50, 0.4)";
+        roundRect(GAME_W / 2 - 75, 28, 150, 22, 11);
+        ctx.fill();
+        ctx.strokeStyle = "#69f0ae";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.fillStyle = "#b9f6ca";
+        ctx.font = "bold 10px 'Fredoka', Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("♻️ MISSÃO ECOLÓGICA", GAME_W / 2, 43);
+
+        // Título estilizado
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 26px 'Fredoka', Arial";
+        ctx.fillText("COLETA SELETIVA", GAME_W / 2, 78);
+
+        // Subtítulo
+        ctx.fillStyle = "#c8e6c9";
+        ctx.font = "11px Arial";
+        ctx.fillText("Separe os resíduos, faça combos e proteja o planeta!", GAME_W / 2, 98);
+
+        // Barra de Recorde e Conquistas
+        ctx.fillStyle = "rgba(10, 22, 14, 0.85)";
+        roundRect(GAME_W / 2 - 130, 110, 260, 24, 12);
+        ctx.fill();
+        ctx.fillStyle = "#ffd54f";
+        ctx.font = "bold 11px Arial";
+        const totalDesb = Object.keys(conquistasDesbloqueadas).length;
+        ctx.fillText(`🏆 Recorde: ${recorde} / ${META_VITORIA}   •   🏅 Conquistas: ${totalDesb} / 6`, GAME_W / 2, 126);
+
+        // Guia das 5 lixeiras
+        const binsChips = [
+          { cor: "#42a5f5", txt: "🟦 Papel" },
+          { cor: "#ef5350", txt: "🟥 Plástico" },
+          { cor: "#66bb6a", txt: "🟩 Vidro" },
+          { cor: "#ffee58", txt: "🟨 Metal" },
+          { cor: "#8d6e63", txt: "🟫 Orgânico" },
+        ];
+        const chipW = 74, startChipX = (GAME_W - (5 * chipW + 4 * 6)) / 2;
+        binsChips.forEach((b, i) => {
+          const bx = startChipX + i * (chipW + 6);
+          ctx.fillStyle = "rgba(0,0,0,0.55)";
+          roundRect(bx, 142, chipW, 20, 6);
+          ctx.fill();
+          ctx.strokeStyle = b.cor;
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "bold 10px Arial";
+          ctx.fillText(b.txt, bx + chipW / 2, 156);
+        });
+
+        // Botão principal JOGAR com efeito 3D e pulso
+        const pulso = 1 + Math.sin(agora * 0.006) * 0.03;
+        ctx.save();
+        ctx.translate(GAME_W / 2, 198);
+        ctx.scale(pulso, pulso);
+        ctx.fillStyle = "#2e7d32";
+        roundRect(-100, -20, 200, 40, 12);
+        ctx.fill();
+        ctx.strokeStyle = "#69f0ae";
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 16px 'Fredoka', Arial";
+        ctx.fillText("▶ JOGAR AGORA", 0, 6);
+        ctx.restore();
+
+        // Dica de início
+        ctx.fillStyle = "#a5d6a7";
+        ctx.font = "11px Arial";
+        ctx.fillText(isMobile ? "Toque na tela ou no botão para começar!" : "Clique no botão ou aperte [ESPAÇO] para começar", GAME_W / 2, 240);
+
+        // Controles rápidos
+        ctx.fillStyle = "#b0bec5";
+        ctx.font = "10px Arial";
+        ctx.fillText("Setas / A-D: mover  •  1 a 5: lixeiras  •  Cuidado com Lixo Tóxico ☣️", GAME_W / 2, 260);
+
+        ctx.restore();
+      } else if (estado === "jogo") {
+        // Lixeira com auras e efeitos
+        if (lixeiraVisivel) {
+          const imgL = imgs.lixeira[lixeiraFantasia - 1];
+          const lw = (imgL && imgL.naturalWidth) || 80;
+          const lh = (imgL && imgL.naturalHeight) || 84;
+          const [lx, ly] = scratchToCanvas(lixeiraX, lixeiraY, lw, lh, [40, 42]);
+
+          ctx.save();
+          // Aura do Coringa
+          if (efeitos.coringaAte > agora) {
+            ctx.save();
+            ctx.strokeStyle = `hsl(${(agora * 0.3) % 360}, 100%, 65%)`;
+            ctx.lineWidth = 4;
+            ctx.shadowColor = ctx.strokeStyle;
+            ctx.shadowBlur = 14;
+            roundRect(lx - 4, ly - 4, lw + 8, lh + 8, 10);
+            ctx.stroke();
+            ctx.restore();
+          }
+
+          // Efeito do Ímã
+          if (efeitos.imaAte > agora) {
+            ctx.save();
+            ctx.strokeStyle = "#ff4081";
+            ctx.lineWidth = 2;
+            ctx.shadowColor = "#ff4081";
+            ctx.shadowBlur = 8;
+            ctx.beginPath();
+            ctx.arc(lx + lw / 2, ly + lh / 2, lw * 0.65 + Math.sin(agora * 0.01) * 4, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+          }
+
+          // Efeito Paralisado / Congelado
+          if (efeitos.congeladoAte > agora) {
+            ctx.save();
+            ctx.strokeStyle = "#00e5ff";
+            ctx.lineWidth = 4;
+            ctx.shadowColor = "#00e5ff";
+            ctx.shadowBlur = 15;
+            roundRect(lx - 2, ly - 2, lw + 4, lh + 4, 8);
+            ctx.stroke();
+
+            ctx.fillStyle = "#00e5ff";
+            ctx.font = "bold 13px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText("⚡ PARALISADO!", lx + lw / 2, ly - 8);
+            ctx.restore();
+          }
+
+          if (imagemPronta(imgL)) {
+            ctx.drawImage(imgL, lx, ly, lw, lh);
+          } else {
+            ctx.fillStyle = "#2e7d32";
+            ctx.fillRect(lx, ly, lw, lh);
+          }
+          ctx.restore();
+        }
+
+        // Lixos e Power-ups caindo
+        for (const c of clones) {
+          const cw = c.w || 50;
+          const ch = c.h || 50;
+          const [cx, cy] = scratchToCanvas(c.x, c.y, cw, ch);
+
+          if (c.isSpecial) {
+            // Renderizar item especial / power-up / obstáculo
+            ctx.save();
+            ctx.translate(cx + cw / 2, cy + ch / 2);
+
+            const pulso = 1 + Math.sin(agora * 0.009) * 0.08;
+            ctx.scale(pulso, pulso);
+
+            // Brilho neon
+            ctx.shadowColor = c.cor;
+            ctx.shadowBlur = 12;
+
+            // Círculo base
+            ctx.beginPath();
+            ctx.arc(0, 0, cw / 2 - 2, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(18, 28, 20, 0.92)";
+            ctx.fill();
+            ctx.lineWidth = 2.5;
+            ctx.strokeStyle = c.cor;
+            ctx.stroke();
+
+            // Emoji
+            ctx.font = "20px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(c.emoji, 0, 1);
+
+            ctx.restore();
+          } else {
+            const imgC = imgs.lixo[c.item - 1];
+            if (imagemPronta(imgC)) {
+              ctx.drawImage(imgC, cx, cy, cw, ch);
+            } else {
+              ctx.fillStyle = "#fbc02d";
+              ctx.fillRect(cx, cy, cw, ch);
+            }
+          }
+        }
+
+        // Dica
+        if (dicaVisivel) {
+          const imgD = imgs.dica[dicaFantasia - 1];
+          const dw = (imgD && imgD.naturalWidth) || 440;
+          const dh = (imgD && imgD.naturalHeight) || 60;
+          const [dx, dy] = scratchToCanvas(0, 95, dw, dh, [220, 30]);
+          if (imagemPronta(imgD)) ctx.drawImage(imgD, dx, dy, dw, dh);
+        }
+
+        // Feedbacks (+1 / -1 / Combos)
+        const proxFeedbacks = [];
+        for (const fb of feedbacks) {
+          const elapsed = tempoRef - fb.criadoEm;
+          if (elapsed < 800) {
+            const yAtual = fb.y - (elapsed * 0.04);
+            const alpha = 1 - (elapsed / 800);
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, alpha);
+            ctx.font = "bold 16px Arial";
+            ctx.textAlign = "center";
+            ctx.fillStyle = fb.cor;
+            ctx.shadowColor = fb.cor;
+            ctx.shadowBlur = 6;
+            ctx.fillText(fb.texto, fb.x, yAtual);
+            ctx.restore();
+            proxFeedbacks.push(fb);
+          }
+        }
+        feedbacks = proxFeedbacks;
+
+        // Flash de erro
+        if (!pausado && tempoRef < flashErroAte) {
+          ctx.save();
+          ctx.strokeStyle = "rgba(255, 60, 60, 0.85)";
+          ctx.lineWidth = 6;
+          ctx.strokeRect(3, 3, GAME_W - 6, GAME_H - 6);
+          ctx.restore();
+        }
+
+        // HUD - Pontos e Vidas
+        ctx.fillStyle = "rgba(20, 28, 22, 0.88)";
+        roundRect(8, 8, 160, 28, 6); ctx.fill();
+        roundRect(8, 41, 105, 28, 6); ctx.fill();
+        roundRect(GAME_W - 158, 8, 150, 28, 6); ctx.fill();
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 14px Arial";
+        ctx.textAlign = "left";
+        ctx.fillText(`⭐ Pontos: ${pontos} / ${META_VITORIA}`, 16, 27);
+        ctx.fillText(`❤️ Vidas: ${vidas}`, 16, 60);
+
+        ctx.fillStyle = "#ffe082";
+        ctx.font = "bold 13px Arial";
+        ctx.fillText(`🏆 Recorde: ${recorde}`, GAME_W - 148, 27);
+
+        // HUD - Indicador de Combo Ativo
+        if (combo >= 2) {
+          ctx.save();
+          const pulsoCombo = 1 + Math.sin(agora * 0.015) * 0.05;
+          ctx.translate(GAME_W / 2, 22);
+          ctx.scale(pulsoCombo, pulsoCombo);
+
+          ctx.fillStyle = "rgba(30, 20, 10, 0.9)";
+          roundRect(-65, -14, 130, 28, 8); ctx.fill();
+
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = combo >= 6 ? "#ff9100" : "#00e5ff";
+          ctx.stroke();
+
+          ctx.fillStyle = combo >= 10 ? "#ffea00" : (combo >= 6 ? "#ff9100" : "#00e5ff");
+          ctx.font = "bold 13px Arial";
+          ctx.textAlign = "center";
+          ctx.fillText(`🔥 COMBO x${multiplicador} (${combo})`, 0, 5);
+          ctx.restore();
+        }
+
+        // HUD - Badges de Power-ups Ativos
+        let badgeX = 8;
+        const badgeY = 74;
+        const badges = [];
+        if (efeitos.coringaAte > agora) badges.push({ txt: `⭐ Coringa ${((efeitos.coringaAte - agora) / 1000).toFixed(1)}s`, cor: "#e040fb" });
+        if (efeitos.imaAte > agora) badges.push({ txt: `🧲 Ímã ${((efeitos.imaAte - agora) / 1000).toFixed(1)}s`, cor: "#ff4081" });
+        if (efeitos.relogioAte > agora) badges.push({ txt: `⏱️ Lento ${((efeitos.relogioAte - agora) / 1000).toFixed(1)}s`, cor: "#00e5ff" });
+        if (efeitos.congeladoAte > agora) badges.push({ txt: `⚡ Paralisado ${((efeitos.congeladoAte - agora) / 1000).toFixed(1)}s`, cor: "#ff1744" });
+
+        for (const b of badges) {
+          ctx.font = "bold 11px Arial";
+          const tw = ctx.measureText(b.txt).width + 12;
+          ctx.fillStyle = "rgba(15, 20, 16, 0.9)";
+          roundRect(badgeX, badgeY, tw, 20, 5); ctx.fill();
+          ctx.strokeStyle = b.cor;
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+          ctx.fillStyle = b.cor;
+          ctx.fillText(b.txt, badgeX + 6, badgeY + 14);
+          badgeX += tw + 6;
+        }
+
+        // Nome da lixeira atual (desktop)
+        if (!isMobile) {
+          const nomes = ["Papel", "Plástico", "Vidro", "Metal", "Orgânico"];
+          const cores = ["#42a5f5", "#ef5350", "#66bb6a", "#ffee58", "#8d6e63"];
+          ctx.fillStyle = "rgba(20, 28, 22, 0.86)";
+          roundRect(GAME_W / 2 - 60, GAME_H - 32, 120, 24, 6); ctx.fill();
+          ctx.fillStyle = cores[lixeiraFantasia - 1];
+          ctx.font = "bold 13px Arial";
+          ctx.textAlign = "center";
+          ctx.fillText("Lixeira: " + nomes[lixeiraFantasia - 1], GAME_W / 2, GAME_H - 15);
+          ctx.textAlign = "left";
+        }
+
+        // Overlay de pausa com Curiosidade Ecológica
+        if (pausado) {
+          ctx.fillStyle = "rgba(0, 0, 0, 0.72)";
+          ctx.fillRect(0, 0, GAME_W, GAME_H);
+
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "bold 26px Arial";
+          ctx.textAlign = "center";
+          ctx.fillText("⏸ JOGO PAUSADO", GAME_W / 2, GAME_H / 2 - 45);
+
+          ctx.font = "14px Arial";
+          ctx.fillStyle = "#cfd8dc";
+          if (isMobile) {
+            ctx.fillText("Toque no botão ▶ no canto para continuar", GAME_W / 2, GAME_H / 2 - 15);
+          } else {
+            ctx.fillText("Aperte P ou clique em Continuar para voltar", GAME_W / 2, GAME_H / 2 - 15);
+          }
+
+          // Caixa de Curiosidade Ecológica na Pausa
+          ctx.fillStyle = "rgba(20, 40, 25, 0.9)";
+          roundRect(24, GAME_H / 2 + 15, GAME_W - 48, 70, 10);
+          ctx.fill();
+          ctx.strokeStyle = "#4caf50";
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          ctx.fillStyle = "#81c784";
+          ctx.font = "bold 12px Arial";
+          ctx.fillText("💡 VOCÊ SABIA?", GAME_W / 2, GAME_H / 2 + 35);
+
+          ctx.fillStyle = "#e8f5e9";
+          ctx.font = "12px Arial";
+          ctx.fillText(curiosidadeAtual, GAME_W / 2, GAME_H / 2 + 58);
+          ctx.textAlign = "left";
+        }
+      } else if (estado === "vitoria") {
+        // ── Tela de Vitória com Impacto Real (Eco-Score) ──
+        if (imagemPronta(imgs.bg.jogo)) {
+          ctx.drawImage(imgs.bg.jogo, 0, 0, GAME_W, GAME_H);
+          ctx.fillStyle = "rgba(8, 22, 12, 0.88)";
+          ctx.fillRect(0, 0, GAME_W, GAME_H);
+        } else {
+          ctx.fillStyle = "#0e2014";
+          ctx.fillRect(0, 0, GAME_W, GAME_H);
+        }
+
+        // Título e Placar
+        ctx.fillStyle = "#ffd54f";
+        ctx.font = "bold 24px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("🎉 VITÓRIA ECOLÓGICA! 🎉", GAME_W / 2, 38);
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 14px Arial";
+        ctx.fillText(`Pontos: ${pontos} / ${META_VITORIA}  •  Maior Combo: ${maxCombo}x`, GAME_W / 2, 60);
+
+        // Card de Métricas de Impacto Real
+        ctx.fillStyle = "rgba(20, 42, 28, 0.9)";
+        roundRect(20, 72, GAME_W - 40, 148, 12);
+        ctx.fill();
+        ctx.strokeStyle = "#69f0ae";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.fillStyle = "#69f0ae";
+        ctx.font = "bold 13px Arial";
+        ctx.fillText("🌍 SEU IMPACTO ECOLÓGICO NESTA PARTIDA:", GAME_W / 2, 94);
+
+        const papelLitros = (statsPartida.papel * 2.5).toFixed(1);
+        const plasticoAnos = statsPartida.plastico * 50;
+        const vidroKg = (statsPartida.vidro * 0.4).toFixed(1);
+        const metalHoras = statsPartida.metal * 3;
+        const organicoKg = (statsPartida.organico * 0.3).toFixed(1);
+
+        ctx.fillStyle = "#e8f5e9";
+        ctx.font = "12px Arial";
+        ctx.textAlign = "left";
+        ctx.fillText(`💧 ${papelLitros} Litros de água economizados (${statsPartida.papel} papéis)`, 36, 118);
+        ctx.fillText(`🌊 Menos ${plasticoAnos} anos de poluição marinha (${statsPartida.plastico} plásticos)`, 36, 138);
+        ctx.fillText(`♻️ ${vidroKg} kg de recursos minerais preservados (${statsPartida.vidro} vidros)`, 36, 158);
+        ctx.fillText(`⚡ ${metalHoras} Horas de energia poupadas (${statsPartida.metal} metais)`, 36, 178);
+        ctx.fillText(`🌱 ${organicoKg} kg de adubo orgânico gerado (${statsPartida.organico} orgânicos)`, 36, 198);
+
+        // Curiosidade Educativa
+        ctx.fillStyle = "#ffd54f";
+        ctx.font = "italic 11px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(`"${curiosidadeAtual}"`, GAME_W / 2, 240);
+
+        // Botões: Jogar Novamente & Menu Início
+        const escBtn = 1 + Math.sin(agora * 0.006) * 0.03;
+        // Botão 1: Jogar Novamente (lado esquerdo)
+        ctx.save();
+        ctx.translate(135, 280);
+        ctx.scale(escBtn, escBtn);
+        ctx.fillStyle = "#2e7d32";
+        roundRect(-85, -18, 170, 36, 10);
+        ctx.fill();
+        ctx.strokeStyle = "#69f0ae";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 13px 'Fredoka', Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("🔄 JOGAR DE NOVO", 0, 5);
+        ctx.restore();
+
+        // Botão 2: Menu Início (lado direito)
+        ctx.save();
+        ctx.translate(345, 280);
+        ctx.fillStyle = "rgba(35, 60, 40, 0.95)";
+        roundRect(-85, -18, 170, 36, 10);
+        ctx.fill();
+        ctx.strokeStyle = "#81c784";
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+        ctx.fillStyle = "#c8e6c9";
+        ctx.font = "bold 13px 'Fredoka', Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("🏠 MENU INÍCIO", 0, 5);
+        ctx.restore();
+
+        ctx.fillStyle = "#b0bec5";
+        ctx.font = "11px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(isMobile ? "Toque em um botão para continuar" : "Clique nos botões ou aperte ESPAÇO", GAME_W / 2, 324);
+
+      } else if (estado === "fim") {
+        // ── Tela de Fim de Jogo (Game Over Educativo) ──
+        ctx.fillStyle = "#141c16";
+        ctx.fillRect(0, 0, GAME_W, GAME_H);
+
+        ctx.fillStyle = "#ef5350";
+        ctx.font = "bold 26px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("💔 FIM DE PARTIDA", GAME_W / 2, 60);
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 15px Arial";
+        ctx.fillText(`Você reciclou ${pontos} itens!  •  Maior Combo: ${maxCombo}x`, GAME_W / 2, 95);
+
+        // Card de incentivo com Curiosidade Ecológica
+        ctx.fillStyle = "rgba(25, 38, 28, 0.9)";
+        roundRect(24, 120, GAME_W - 48, 90, 12);
+        ctx.fill();
+        ctx.strokeStyle = "#81c784";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.fillStyle = "#81c784";
+        ctx.font = "bold 13px Arial";
+        ctx.fillText("🌱 DICA ECOLÓGICA:", GAME_W / 2, 145);
+
+        ctx.fillStyle = "#e8f5e9";
+        ctx.font = "12px Arial";
+        ctx.fillText(curiosidadeAtual, GAME_W / 2, 175);
+
+        // Botões: Tentar Novamente & Menu Início
+        const escBtn = 1 + Math.sin(agora * 0.006) * 0.03;
+        // Botão 1: Tentar Novamente (lado esquerdo)
+        ctx.save();
+        ctx.translate(135, 255);
+        ctx.scale(escBtn, escBtn);
+        ctx.fillStyle = "#2e7d32";
+        roundRect(-85, -18, 170, 36, 10);
+        ctx.fill();
+        ctx.strokeStyle = "#69f0ae";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 13px 'Fredoka', Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("🔄 TENTAR DE NOVO", 0, 5);
+        ctx.restore();
+
+        // Botão 2: Menu Início (lado direito)
+        ctx.save();
+        ctx.translate(345, 255);
+        ctx.fillStyle = "rgba(35, 60, 40, 0.95)";
+        roundRect(-85, -18, 170, 36, 10);
+        ctx.fill();
+        ctx.strokeStyle = "#81c784";
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+        ctx.fillStyle = "#c8e6c9";
+        ctx.font = "bold 13px 'Fredoka', Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("🏠 MENU INÍCIO", 0, 5);
+        ctx.restore();
+
+        ctx.fillStyle = "#b0bec5";
+        ctx.font = "11px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(isMobile ? "Toque em um botão para continuar" : "Clique nos botões ou aperte ESPAÇO", GAME_W / 2, 302);
+        ctx.textAlign = "left";
+      }
+
+      ctx.restore();
+      atualizarBotaoJogar();
+      requestAnimationFrame(loop);
+    }
+
+    // ── Iniciar ──
+    recalcularTamanho();
+    atualizarUIInicio();
+    canvas.focus();
+    requestAnimationFrame(loop);
+  </script>
+</body>
+
+</html>
